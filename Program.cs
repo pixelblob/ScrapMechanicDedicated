@@ -2,9 +2,10 @@ using ScrapMechanicDedicated.Properties;
 using System.Drawing;
 using System.Windows.Forms;
 using static ScrapMechanicDedicated.GameUtil;
-using static ScrapMechanicDedicated.GameStateManager;
+using static ScrapMechanicDedicated.GameInactivityManager;
 using static ScrapMechanicDedicated.TcpServer;
 using static ScrapMechanicDedicated.Util;
+using static ScrapMechanicDedicated.GameBackupManager;
 using System.Diagnostics;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 
@@ -38,7 +39,9 @@ namespace ScrapMechanicDedicated
 
             parseCliArgs();
 
-            initInactiveTimer();
+            initGameBackupManager();
+            initGameInactivityManager();
+            GameCrashManager gameCrashManager = new();
 
             if (!startHidden) form1.Show();
 

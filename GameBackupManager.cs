@@ -56,7 +56,7 @@ namespace ScrapMechanicDedicated
             GameBackupTimer.Start();
         }
 
-        private static void GameBackupManager_ServerStopped()
+        private static void GameBackupManager_ServerStopped(bool intentional = true)
         {
             GameBackupTimer.Stop();
             playerOnlineSinceLastBackup = false;

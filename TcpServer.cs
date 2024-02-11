@@ -24,7 +24,7 @@ namespace ScrapMechanicDedicated
         {
 
             ServerStarted += updateTcpServerState;
-            ServerStopped += updateTcpServerState;
+            ServerStopped += TcpServer_ServerStopped;
             ServerSuspended += updateTcpServerState;
             ServerResumed += updateTcpServerState;
             ServerPlayerJoined += updateTcpServerPlayers;
@@ -34,6 +34,11 @@ namespace ScrapMechanicDedicated
             accept_connection();
             //Thread th = new Thread(new ThreadStart(StartAccepter));
             //th.Start();
+        }
+
+        private static void TcpServer_ServerStopped(bool intentional = true)
+        {
+            updateTcpServerState();
         }
 
         private static void updateTcpServerState()

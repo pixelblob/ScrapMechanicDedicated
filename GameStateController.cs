@@ -21,7 +21,7 @@ namespace ScrapMechanicDedicated
     {
 
         public static event ServerStateHandler ServerStarted;
-        public static event ServerStateHandler ServerStopped;
+        public static event ServerStopStateHandler ServerStopped;
         public static event ServerStateHandler ServerSuspended;
         public static event ServerStateHandler ServerResumed;
         public static event PlayerJoinLeaveHandler ServerPlayerJoined;
@@ -31,6 +31,7 @@ namespace ScrapMechanicDedicated
         public delegate void LoadingFinishedHandler(float ms);
         public delegate void PlayerJoinLeaveHandler(string name);
         public delegate void ServerStateHandler();
+        public delegate void ServerStopStateHandler(bool intentional = true);
 
         static void OnServerPlayerJoined(string name) {
 
@@ -58,8 +59,9 @@ namespace ScrapMechanicDedicated
             logLine($"Loading Screen has lifted after ${ms}ms");
         }
 
-        static void OnServerStopped()
+        static void OnServerStopped(bool intentional = true)
         {
+            serverRunning = false;
             playerCount = 0;
             playersList.Clear();
 
@@ -68,15 +70,16 @@ namespace ScrapMechanicDedicated
             form1.stopGameServerCtx.Enabled = false;
 
             form1.startGameServerCtx.Enabled = true;
-
-            AllowSleep();
+            ApplicationWakeLockFunctions.
+                        AllowSleep();
             serverSuspended = false;
 
-            ServerStopped?.Invoke();
+            ServerStopped?.Invoke(intentional);
         }
 
         static void OnServerStarted()
         {
+            serverRunning = true;
             playerCount = 0;
             playersList.Clear();
             StartGameServerLogWatcher();
@@ -84,7 +87,7 @@ namespace ScrapMechanicDedicated
             //These are the only exception for form functions called in server code...
             form1.stopGameServerCtx.Enabled = true;
             form1.startGameServerCtx.Enabled = false;
-            PreventSleep();
+            ApplicationWakeLockFunctions.PreventSleep();
             form1.notifyIcon1.Icon = Properties.Resources.scrapmechanicnormal;
 
             ServerLogLine -= GameStateController_ServerLogLine;
@@ -94,8 +97,9 @@ namespace ScrapMechanicDedicated
         }
         static void OnServerSuspended()
         {
-
-            AllowSleep();
+            serverSuspended = true;
+            ApplicationWakeLockFunctions.
+                        AllowSleep();
             form1.notifyIcon1.Icon = Properties.Resources.scrapmechsuspended;
 
             ServerSuspended?.Invoke();
@@ -103,8 +107,9 @@ namespace ScrapMechanicDedicated
 
         static void OnServerResumed()
         {
-
-            PreventSleep();
+            serverSuspended = false;
+            ApplicationWakeLockFunctions.
+                        PreventSleep();
             form1.notifyIcon1.Icon = Properties.Resources.scrapmechanicnormal;
 
             ServerResumed?.Invoke();
@@ -161,18 +166,18 @@ namespace ScrapMechanicDedicated
         {
             if (!serverRunning) return;
             serverRunning = false;
-            intentionallyStopped = true;
             OnServerStopped();
 
             //updateServerState();
             proc.Kill();
         }
 
+        static GameCrashManager? crashManager;
+
         public static void startServer()
         {
             if (serverRunning) return;
             serverRunning = true;
-            intentionallyStopped = false;
 
             //updateServerState();
 
@@ -198,17 +203,6 @@ namespace ScrapMechanicDedicated
             proc.Start();
 
             OnServerStarted();
-
-
-
-            //Action safeWrite = delegate
-            //{
-
-            //    richLogBox.Clear();
-
-            //};
-            //Invoke(safeWrite);
-
 
 
             while (proc.MainWindowHandle == IntPtr.Zero) Thread.Sleep(1);
@@ -239,13 +233,13 @@ namespace ScrapMechanicDedicated
             {
                 if (proc.Threads[0].WaitReason == System.Diagnostics.ThreadWaitReason.Suspended)
                 {
-                    if (serverSuspended != true) ServerSuspended();
+                    if (serverSuspended != true) OnServerSuspended();
                     serverSuspended = true;
                 }
             }
             else
             {
-                if (serverSuspended != false) ServerResumed();
+                if (serverSuspended != false) OnServerResumed();
                 serverSuspended = false;
             }
 
@@ -255,39 +249,16 @@ namespace ScrapMechanicDedicated
 
         private static void gameServerExited(object? sender, EventArgs e)
         {
-            serverRunning = false;
-
-            logLine(
-            $"Exit time    : {proc.ExitTime}\n" +
-            $"Exit code    : {proc.ExitCode}\n" +
-            $"Elapsed time : {Math.Round((proc.ExitTime - proc.StartTime).TotalMilliseconds)}");
-
-            ServerStopped();
-
-            //updateServerState();
-
-            if (!intentionallyStopped)
+            proc.Exited -= gameServerExited;
+            if (serverRunning)
             {
-                logLine("Server was unintentionally Stopped!");
-                if (restartAttempts >= 5)
-                {
-                    logLine("Not Restarting as restart attempts is too high!");
-                    resetRestartAttempts();
-                    return;
-                }
-
-                logLine("Starting Again!");
-                restartAttempts++;
-                startServer();
-
+                serverRunning = false;
+                OnServerStopped(false);
             }
-
+            
         }
 
-        public static void resetRestartAttempts()
-        {
-            restartAttempts = 0;
-        }
+        
 
         public static void suspendServer()
         {

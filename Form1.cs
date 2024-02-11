@@ -6,6 +6,7 @@ using static ScrapMechanicDedicated.GameStateManager;
 using static ScrapMechanicDedicated.GameStateController;
 using static ScrapMechanicDedicated.Util;
 using static ScrapMechanicDedicated.GameLogFileWatcher;
+using static ScrapMechanicDedicated.GameInactivityManager;
 
 [assembly: log4net.Config.XmlConfigurator(ConfigFile = "log4net.config")]
 
@@ -14,6 +15,13 @@ namespace ScrapMechanicDedicated
 
     public partial class Form1 : Form
     {
+
+        /* -------------------------    TODO LIST    -------------------------
+
+         Implement https://stackoverflow.com/questions/3342941/kill-child-process-when-parent-process-is-killed to allow windows to kill the scrapmechanic process
+         if this process dies unexpectedly.
+
+         */
 
         public Form1()
         {
@@ -54,13 +62,6 @@ namespace ScrapMechanicDedicated
         }
 
 
-
-
-
-
-
-
-
         private void updateSaveGamesList()
         {
             Debug.WriteLine("LAST SLECTED GAME:" + Properties.Settings.Default.lastSelectedSaveGame);
@@ -89,47 +90,7 @@ namespace ScrapMechanicDedicated
             }
         }
 
-        public int inactiveTimeout = 600 * 1000;
-        public DateTime lastInactiveTimeoutDate;
-
-        public System.Timers.Timer InactiveTimer = new();
-        public System.Timers.Timer InactiveTimerStatus = new();
-
-        public System.Timers.Timer ResetFailedAttemptsTimer = new();
-
-        /*private void createInactiveTimer()
-        {
-            InactiveTimer.Interval = inactiveTimeout;
-            InactiveTimer.Elapsed += newInactiveTimer_Tick;
-            InactiveTimerStatus.Elapsed += InactiveTimerStatusUpdate_Tick;
-            InactiveTimerStatus.Interval = 1000;
-
-            // Reset Failed Attempts after 5 minutes.
-            ResetFailedAttemptsTimer.Interval = 5 * 60 * 1000;
-            ResetFailedAttemptsTimer.Elapsed += ResetFailedAttempts_Tick;
-        }*/
-
-        public void ResetFailedAttempts_Tick(object sender, EventArgs e)
-        {
-            ResetFailedAttemptsTimer.Stop();
-            resetRestartAttempts();
-        }
-
-
-
-        public double inactiveTimeoutCurrentSeconds = 0;
-
-        private void InactiveTimerStatusUpdate_Tick(object sender, EventArgs e)
-        {
-            inactiveTimeoutCurrentSeconds = (DateTime.Now - lastInactiveTimeoutDate).TotalSeconds;
-            updateApplicationStatusTitle();
-        }
-
-
-
-
-        // event handler
-
+        public DateTime? lastInactiveTimeoutDate;
 
         public void updateGuiPlayersList(string name)
         {
@@ -148,7 +109,7 @@ namespace ScrapMechanicDedicated
             var title = "Scrap Mechanic Dedicated";
             if (serverRunning)
             {
-                title += " [Running]";
+                if (!serverSuspended) title += " [Running]";
             }
             else
             {
@@ -159,7 +120,11 @@ namespace ScrapMechanicDedicated
                 title += " [Suspended]";
             }
             title += $" [{playerCount}]";
-            if (InactiveTimer.Enabled) title += $" [{Math.Floor(inactiveTimeoutCurrentSeconds)}/{inactiveTimeout / 1000}]";
+            if (lastInactiveTimeoutDate != null) {
+                var inactiveTimeoutCurrentSeconds = ((TimeSpan)(DateTime.Now - lastInactiveTimeoutDate)).TotalSeconds;
+                title += $" [{Math.Floor(inactiveTimeoutCurrentSeconds)}/{inactivityTimeoutMs / 1000}]";
+            }
+            
 
 
             if (IsHandleCreated) Invoke(delegate
@@ -341,6 +306,33 @@ namespace ScrapMechanicDedicated
             ServerLogLine += Form1_ServerLogLine;
             ServerPlayerJoined += updateGuiPlayersList;
             ServerPlayerLeft += updateGuiPlayersList;
+            ServerInactvityStarted += Form1_ServerInactvityStarted;
+            ServerInactvityStopped += Form1_ServerInactvityStopped;
+
+            updateApplicationStatusTitle();
+        }
+
+
+        private static readonly System.Timers.Timer InactivityTimerStatusUpdate = new(interval: 1000);
+        private void Form1_ServerInactvityStopped()
+        {
+            lastInactiveTimeoutDate = null;
+            updateApplicationStatusTitle();
+            InactivityTimerStatusUpdate.Stop();
+        }
+
+        private void Form1_ServerInactvityStarted()
+        {
+            lastInactiveTimeoutDate = DateTime.Now;
+            updateApplicationStatusTitle();
+            InactivityTimerStatusUpdate.Elapsed -= InactivityTimerStatusUpdate_Elapsed;
+            InactivityTimerStatusUpdate.Elapsed += InactivityTimerStatusUpdate_Elapsed;
+            InactivityTimerStatusUpdate.Start();
+        }
+
+        private void InactivityTimerStatusUpdate_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
+        {
+            updateApplicationStatusTitle();
         }
 
         private void Form1_ServerLogLine(string line, string cleanLine)
@@ -354,42 +346,40 @@ namespace ScrapMechanicDedicated
 
         private void Form1_ServerResumed()
         {
-            Action safeWrite = delegate
+            this.Invoke(delegate
             {
                 suspendServerButton.Enabled = true;
                 resumeServerButton.Enabled = false;
 
-                ResetFailedAttemptsTimer.Start();
-            };
-            this.Invoke(safeWrite);
+                //ResetFailedAttemptsTimer.Start();
+            });
 
             updateApplicationStatusTitle();
         }
 
         private void Form1_ServerSuspended()
         {
-            Action safeWrite = delegate
+            this.Invoke(delegate
             {
                 suspendServerButton.Enabled = false;
                 resumeServerButton.Enabled = true;
 
-                ResetFailedAttemptsTimer.Stop();
-            };
-            this.Invoke(safeWrite);
+                //ResetFailedAttemptsTimer.Stop();
+            });
 
             updateApplicationStatusTitle();
         }
 
-        private void Form1_ServerStopped()
+        private void Form1_ServerStopped(bool intentional = true)
         {
-            Action safeWrite = delegate
+            this.Invoke(delegate
             {
 
                 richLogBox.Visible = false;
                 saveGamesListBox.Enabled = true;
                 stopServerButton.Enabled = false;
                 //inactiveTimer.Enabled = true;
-                ResetFailedAttemptsTimer.Stop();
+                //ResetFailedAttemptsTimer.Stop();
 
                 if (saveGamesListBox.SelectedIndex >= 0)
                 {
@@ -404,8 +394,7 @@ namespace ScrapMechanicDedicated
                 suspendServerButton.Enabled = false;
                 resumeServerButton.Enabled = false;
 
-            };
-            this.Invoke(safeWrite);
+            });
 
             updateApplicationStatusTitle();
         }
@@ -433,7 +422,6 @@ namespace ScrapMechanicDedicated
 
         private void startServerButton_Click(object sender, EventArgs e)
         {
-            resetRestartAttempts();
             startServer();
         }
 
