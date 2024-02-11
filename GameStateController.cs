@@ -13,6 +13,7 @@ using static ScrapMechanicDedicated.WaitStateManager;
 using static ScrapMechanicDedicated.Util;
 using static ScrapMechanicDedicated.GameLogFileWatcher;
 using System.Globalization;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
 
 namespace ScrapMechanicDedicated
 {
@@ -23,10 +24,27 @@ namespace ScrapMechanicDedicated
         public static event ServerStateHandler ServerStopped;
         public static event ServerStateHandler ServerSuspended;
         public static event ServerStateHandler ServerResumed;
+        public static event PlayerJoinLeaveHandler ServerPlayerJoined;
+        public static event PlayerJoinLeaveHandler ServerPlayerLeft;
         public static event LoadingFinishedHandler LoadingFinished;
         public static event LoadingFinishedHandler LoadingScreenFinished;
         public delegate void LoadingFinishedHandler(float ms);
+        public delegate void PlayerJoinLeaveHandler(string name);
         public delegate void ServerStateHandler();
+
+        static void OnServerPlayerJoined(string name) {
+
+            if (playerCount > 0) playersList.Add(name);
+
+            ServerPlayerJoined?.Invoke(name);
+        }
+
+        static void OnServerPlayerLeft(string name)
+        {
+            playersList.Remove(name);
+
+            ServerPlayerLeft?.Invoke(name);
+        }
 
         static void onLoadingFinished(float ms)
         {
@@ -44,7 +62,15 @@ namespace ScrapMechanicDedicated
         {
             playerCount = 0;
             playersList.Clear();
-            updatePlayerCount();
+
+            form1.notifyIcon1.Icon = Properties.Resources.scrapmechdeactivated;
+
+            form1.stopGameServerCtx.Enabled = false;
+
+            form1.startGameServerCtx.Enabled = true;
+
+            AllowSleep();
+            serverSuspended = false;
 
             ServerStopped?.Invoke();
         }
@@ -53,13 +79,35 @@ namespace ScrapMechanicDedicated
         {
             playerCount = 0;
             playersList.Clear();
-            updatePlayerCount();
             StartGameServerLogWatcher();
+
+            //These are the only exception for form functions called in server code...
+            form1.stopGameServerCtx.Enabled = true;
+            form1.startGameServerCtx.Enabled = false;
+            PreventSleep();
+            form1.notifyIcon1.Icon = Properties.Resources.scrapmechanicnormal;
 
             ServerLogLine -= GameStateController_ServerLogLine;
             ServerLogLine += GameStateController_ServerLogLine;
 
             ServerStarted?.Invoke();
+        }
+        static void OnServerSuspended()
+        {
+
+            AllowSleep();
+            form1.notifyIcon1.Icon = Properties.Resources.scrapmechsuspended;
+
+            ServerSuspended?.Invoke();
+        }
+
+        static void OnServerResumed()
+        {
+
+            PreventSleep();
+            form1.notifyIcon1.Icon = Properties.Resources.scrapmechanicnormal;
+
+            ServerResumed?.Invoke();
         }
 
         static float? loadingScreenTimeMs;
@@ -83,19 +131,31 @@ namespace ScrapMechanicDedicated
                 loadingScreenTimeMs = float.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture) * 1000;
                 onLoadingScreenFinished((float)loadingScreenTimeMs);
             }
+
+            if (cleanLine.Contains("joined the game") || cleanLine.Contains("left the game"))
+            {
+                Match matchedJoin = joinReg().Match(cleanLine);
+
+                if (matchedJoin.Success)
+                {
+                    var username = matchedJoin.Groups[1].Value;
+                    var type = matchedJoin.Groups[2].Value;
+                    int count = int.Parse(matchedJoin.Groups[3].Value);
+
+                    Debug.WriteLine(username, type, count.ToString());
+                    playerCount = count;
+                    if (type == "joined")
+                    {
+                        OnServerPlayerJoined(username);
+                    }
+                    else
+                    {
+                        OnServerPlayerLeft(username);
+                    }
+                }
+            }
         }
 
-        static void OnServerSuspended()
-        {
-
-            ServerSuspended?.Invoke();
-        }
-
-        static void OnServerResumed()
-        {
-
-            ServerResumed?.Invoke();
-        }
 
         public static void stopServer()
         {
@@ -104,7 +164,7 @@ namespace ScrapMechanicDedicated
             intentionallyStopped = true;
             OnServerStopped();
 
-            updateServerState();
+            //updateServerState();
             proc.Kill();
         }
 
@@ -114,7 +174,7 @@ namespace ScrapMechanicDedicated
             serverRunning = true;
             intentionallyStopped = false;
 
-            updateServerState();
+            //updateServerState();
 
 
 
@@ -190,7 +250,7 @@ namespace ScrapMechanicDedicated
             }
 
 
-            updateServerState();
+            //updateServerState();
         }
 
         private static void gameServerExited(object? sender, EventArgs e)
@@ -204,7 +264,7 @@ namespace ScrapMechanicDedicated
 
             ServerStopped();
 
-            updateServerState();
+            //updateServerState();
 
             if (!intentionallyStopped)
             {
@@ -224,23 +284,6 @@ namespace ScrapMechanicDedicated
 
         }
 
-        public static void createServerBackup()
-        {
-            string backupFileDirectory = Path.Combine(GameUtil.serverExecutablePath, "../Backups/");
-            System.IO.Directory.CreateDirectory(backupFileDirectory);
-            string backupFilePath = Path.Combine(backupFileDirectory, DateTime.Now.ToString("yyyy-dd-M_HH-mm-ss") + ".zip");
-            string tempFilePath = Path.Combine(backupFileDirectory, "temp.db");
-
-            File.Copy(currentSaveGamePath, tempFilePath, true);
-
-            using (ZipArchive zip = ZipFile.Open(backupFilePath, ZipArchiveMode.Create))
-            {
-                zip.CreateEntryFromFile(tempFilePath, Path.GetFileName(currentSaveGamePath));
-                File.Delete(tempFilePath);
-            }
-
-        }
-
         public static void resetRestartAttempts()
         {
             restartAttempts = 0;
@@ -249,13 +292,13 @@ namespace ScrapMechanicDedicated
         public static void suspendServer()
         {
             ApplicationSuspension.SuspendProcess(proc.Id);
-            updateServerState();
+            //updateServerState();
         }
 
         public static void resumeServer()
         {
             ApplicationSuspension.ResumeProcess(proc.Id);
-            updateServerState();
+            //updateServerState();
         }
 
     }

@@ -131,7 +131,7 @@ namespace ScrapMechanicDedicated
         // event handler
 
 
-        public void updateGuiPlayersList()
+        public void updateGuiPlayersList(string name)
         {
             updateApplicationStatusTitle();
 
@@ -169,36 +169,6 @@ namespace ScrapMechanicDedicated
 
         }
 
-
-
-
-
-
-
-        private string getLatestLogFile(string dir)
-        {
-
-            var directory = new DirectoryInfo(dir);
-            var myFile = directory.GetFiles()
-             .OrderByDescending(f => f.LastWriteTime)
-             .First();
-            return myFile.ToString();
-        }
-
-
-
-
-
-
-
-        private void sendToTray()
-        {
-            this.Hide();
-            notifyIcon1.BalloonTipTitle = "Form is minimized";
-            notifyIcon1.BalloonTipText = "Left-click tray icon to open.";
-            notifyIcon1.ShowBalloonTip(500);
-        }
-
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
 
@@ -213,6 +183,10 @@ namespace ScrapMechanicDedicated
                 e.Cancel = true;
 
                 this.Hide();
+
+                notifyIcon1.BalloonTipTitle = "Form is minimized";
+                notifyIcon1.BalloonTipText = "Left-click tray icon to open.";
+                notifyIcon1.ShowBalloonTip(500);
 
             }
             else
@@ -234,11 +208,6 @@ namespace ScrapMechanicDedicated
         private void Exit_Click(object sender, EventArgs e)
         {
             Environment.Exit(Environment.ExitCode);
-        }
-
-        private void contextMenuStrip1_Opening(object sender, System.ComponentModel.CancelEventArgs e)
-        {
-
         }
 
         private void show_Click(object sender, EventArgs e)
@@ -353,7 +322,7 @@ namespace ScrapMechanicDedicated
         {
             var saveGameFullPath = saveGames[saveGamesListBox.SelectedIndex];
             currentSaveGamePath = saveGameFullPath;
-            updateServerState();
+            //updateServerState();
             displaySaveGameData(saveGameFullPath);
 
             Properties.Settings.Default.lastSelectedSaveGame = saveGameFullPath;
@@ -361,30 +330,17 @@ namespace ScrapMechanicDedicated
 
         }
 
-        private void checkBox1_CheckedChanged(object sender, EventArgs e)
-        {
-
-        }
-
         private void Form1_Load(object sender, EventArgs e)
         {
-            //AllocConsole();
-            //aaa
-
-
             updateSaveGamesList();
-            //updateServerState();
 
-
-
-            //StartWebserver();
-
-            //createInactiveTimer();
             ServerStarted += Form1_ServerStarted;
             ServerStopped += Form1_ServerStopped;
             ServerSuspended += Form1_ServerSuspended;
             ServerResumed += Form1_ServerResumed;
             ServerLogLine += Form1_ServerLogLine;
+            ServerPlayerJoined += updateGuiPlayersList;
+            ServerPlayerLeft += updateGuiPlayersList;
         }
 
         private void Form1_ServerLogLine(string line, string cleanLine)
@@ -402,7 +358,6 @@ namespace ScrapMechanicDedicated
             {
                 suspendServerButton.Enabled = true;
                 resumeServerButton.Enabled = false;
-                backupTimer.Enabled = true;
 
                 ResetFailedAttemptsTimer.Start();
             };
@@ -417,7 +372,6 @@ namespace ScrapMechanicDedicated
             {
                 suspendServerButton.Enabled = false;
                 resumeServerButton.Enabled = true;
-                backupTimer.Enabled = false;
 
                 ResetFailedAttemptsTimer.Stop();
             };
@@ -434,8 +388,6 @@ namespace ScrapMechanicDedicated
                 richLogBox.Visible = false;
                 saveGamesListBox.Enabled = true;
                 stopServerButton.Enabled = false;
-
-                backupTimer.Enabled = false;
                 //inactiveTimer.Enabled = true;
                 ResetFailedAttemptsTimer.Stop();
 
@@ -474,43 +426,9 @@ namespace ScrapMechanicDedicated
             updateApplicationStatusTitle();
         }
 
-        int offlineTimerCount = 0;
-
-        private void timer1_Tick(object sender, EventArgs e)
-        {
-            offlineTimerCount++;
-
-            updateApplicationStatusTitle();
-
-
-            if (playerCount == 0 && !serverSuspended)
-            {
-                if (offlineTimerCount < 600) return;
-                Debug.WriteLine("Server is idle, Suspending!");
-                suspendServer();
-                offlineTimerCount = 0;
-
-            }
-            else
-            {
-                offlineTimerCount = 0;
-            }
-
-        }
-
         private void backupServerBtn_Click(object sender, EventArgs e)
         {
-            createServerBackup();
-        }
-
-        private void backupTimer_Tick(object sender, EventArgs e)
-        {
-            createServerBackup();
-        }
-
-        private void notifyIcon1_MouseDoubleClick(object sender, MouseEventArgs e)
-        {
-
+            GameBackupManager.CreateServerBackup();
         }
 
         private void startServerButton_Click(object sender, EventArgs e)

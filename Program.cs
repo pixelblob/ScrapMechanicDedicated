@@ -32,7 +32,7 @@ namespace ScrapMechanicDedicated
 
             _ = form1.Handle;
 
-            updateServerState();
+            //updateServerState();
 
             startTcpServer();
 

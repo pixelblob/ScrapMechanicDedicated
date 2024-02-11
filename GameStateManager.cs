@@ -79,62 +79,6 @@ namespace ScrapMechanicDedicated
         }
 
 
-        public static void updatePlayerCount()
-        {
-            if (form1.IsHandleCreated) form1.Invoke(form1.updateGuiPlayersList);
-            broadcastLine("playerCount " + playerCount);
-            string playerString = string.Join(",", playersList);
-            broadcastLine("playerList " + playerString);
-            updateInactiveTimeout();
-        }
-
-
-
-        public static void updateServerState()
-        {
-
-            //if (form1.IsHandleCreated) form1.Invoke(form1.UpdateGuiState);
-
-            if (serverRunning)
-            {
-                form1.stopGameServerCtx.Enabled = true;
-                form1.startGameServerCtx.Enabled = false;
-
-                if (serverSuspended)
-                {
-                    AllowSleep();
-                    form1.notifyIcon1.Icon = Properties.Resources.scrapmechsuspended;
-
-                }
-                else
-                {
-                    PreventSleep();
-                    form1.notifyIcon1.Icon = Properties.Resources.scrapmechanicnormal;
-                }
-            }
-            else
-            {
-                AllowSleep();
-
-                serverSuspended = false;
-                playerCount = 0;
-                playersList.Clear();
-                updatePlayerCount();
-                form1.notifyIcon1.Icon = Properties.Resources.scrapmechdeactivated;
-
-                form1.stopGameServerCtx.Enabled = false;
-
-                form1.startGameServerCtx.Enabled = true;
-                AllowSleep();
-            }
-
-            updateInactiveTimeout();
-
-
-            broadcastLine("serverRunning " + serverRunning);
-            broadcastLine("serverSuspended " + serverSuspended);
-        }
-
         [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         static extern EXECUTION_STATE SetThreadExecutionState(EXECUTION_STATE esFlags);
 
@@ -149,7 +93,7 @@ namespace ScrapMechanicDedicated
             // ES_USER_PRESENT = 0x00000004
         }
 
-        static void PreventSleep()
+        public static void PreventSleep()
         {
             form1.Invoke(delegate
             {
@@ -159,7 +103,7 @@ namespace ScrapMechanicDedicated
             });
         }
 
-        static void AllowSleep()
+        public static void AllowSleep()
         {
             form1.Invoke(delegate
             {

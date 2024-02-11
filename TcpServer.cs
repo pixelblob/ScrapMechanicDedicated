@@ -12,7 +12,6 @@ using System.CodeDom;
 
 using static ScrapMechanicDedicated.GameStateController;
 using static ScrapMechanicDedicated.GameStateManager;
-using static ScrapMechanicDedicated.Program;
 
 namespace ScrapMechanicDedicated
 {
@@ -23,11 +22,31 @@ namespace ScrapMechanicDedicated
 
         public static void startTcpServer()
         {
-            
+
+            ServerStarted += updateTcpServerState;
+            ServerStopped += updateTcpServerState;
+            ServerSuspended += updateTcpServerState;
+            ServerResumed += updateTcpServerState;
+            ServerPlayerJoined += updateTcpServerPlayers;
+            ServerPlayerLeft += updateTcpServerPlayers;
+
             server.Start();
             accept_connection();
             //Thread th = new Thread(new ThreadStart(StartAccepter));
             //th.Start();
+        }
+
+        private static void updateTcpServerState()
+        {
+            broadcastLine("serverRunning " + serverRunning);
+            broadcastLine("serverSuspended " + serverSuspended);
+        }
+
+        private static void updateTcpServerPlayers(string name)
+        {
+            broadcastLine("playerCount " + playerCount);
+            string playerString = string.Join(",", playersList);
+            broadcastLine("playerList " + playerString);
         }
 
         private static void accept_connection()
@@ -52,8 +71,6 @@ namespace ScrapMechanicDedicated
             broadcastLine("playerCount " + playerCount);
             string playerString = string.Join(",", playersList);
             broadcastLine("playerList " + playerString);
-
-            string recivedLine = "";
 
             while (client.Connected)  //while the client is connected, we look for incoming messages
             {

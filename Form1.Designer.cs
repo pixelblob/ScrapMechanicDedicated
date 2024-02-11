@@ -62,7 +62,6 @@ namespace ScrapMechanicDedicated
             gameDayLabel = new Label();
             richLogBox = new RichTextBox();
             backupServerBtn = new Button();
-            backupTimer = new System.Windows.Forms.Timer(components);
             imageList1 = new ImageList(components);
             listBox1 = new ListBox();
             contextMenuStrip1.SuspendLayout();
@@ -80,7 +79,6 @@ namespace ScrapMechanicDedicated
             notifyIcon1.Text = "Scrap Mechanic Dedicated";
             notifyIcon1.Visible = true;
             notifyIcon1.MouseClick += notifyIcon1_MouseClick;
-            notifyIcon1.MouseDoubleClick += notifyIcon1_MouseDoubleClick;
             // 
             // contextMenuStrip1
             // 
@@ -88,7 +86,6 @@ namespace ScrapMechanicDedicated
             contextMenuStrip1.Items.AddRange(new ToolStripItem[] { startGameServerCtx, stopGameServerCtx, Exit });
             contextMenuStrip1.Name = "contextMenuStrip1";
             contextMenuStrip1.Size = new Size(134, 70);
-            contextMenuStrip1.Opening += contextMenuStrip1_Opening;
             // 
             // startGameServerCtx
             // 
@@ -414,11 +411,6 @@ namespace ScrapMechanicDedicated
             backupServerBtn.UseVisualStyleBackColor = false;
             backupServerBtn.Click += backupServerBtn_Click;
             // 
-            // backupTimer
-            // 
-            backupTimer.Interval = 300000;
-            backupTimer.Tick += backupTimer_Tick;
-            // 
             // imageList1
             // 
             imageList1.ColorDepth = ColorDepth.Depth32Bit;
@@ -497,7 +489,6 @@ namespace ScrapMechanicDedicated
         private Button suspendServerButton;
         private Button resumeServerButton;
         private Button backupServerBtn;
-        private System.Windows.Forms.Timer backupTimer;
         private ImageList imageList1;
         private ListBox listBox1;
         public NotifyIcon notifyIcon1;

@@ -50,33 +50,6 @@ namespace ScrapMechanicDedicated
 
             if (strippedLine == "Connection Status Changed") logLinesToCollect = 2;
 
-            if (strippedLine.Contains("joined the game") || strippedLine.Contains("left the game"))
-            {
-                Match matchedJoin = joinReg().Match(strippedLine);
-
-                if (matchedJoin.Success)
-                {
-                    var username = matchedJoin.Groups[1].Value;
-                    var type = matchedJoin.Groups[2].Value;
-                    int count = int.Parse(matchedJoin.Groups[3].Value);
-
-                    Debug.WriteLine(username, type, count.ToString());
-                    playerCount = count;
-                    if (type == "joined")
-                    {
-                        if (count > 0) playersList.Add(username);
-
-                    }
-                    else
-                    {
-                        playersList.Remove(username);
-                    }
-
-                    updatePlayerCount();
-                }
-            }
-
-            
         }
 
         public static void StartGameServerLogWatcher()
@@ -175,13 +148,13 @@ namespace ScrapMechanicDedicated
         }
 
         [GeneratedRegex(@"(.*) (joined|left) the game \[(\d+)\]")]
-        private static partial Regex joinReg();
+        public static partial Regex joinReg();
         [GeneratedRegex(@"Connection handle: ([0-9]+), user: ([0-9]+)")]
-        private static partial Regex conHandleReg();
+        public static partial Regex conHandleReg();
         [GeneratedRegex(@"State: ([A-z ]+) -> ([A-z ]+)")]
-        private static partial Regex conStateReg();
+        public static partial Regex conStateReg();
         [GeneratedRegex(@"([0-9]{2}:[0-9]{2}:[0-9]{2}) \(([0-9]+)\/([0-9]+)\) (\[[A-z]+\]) (?:	)?")]
-        private static partial Regex logLineReg();
+        public static partial Regex logLineReg();
         [GeneratedRegex(@"Loading screen time: ([0-9]+.[0-9]+)s")]
         public static partial Regex loadingScreenTimeReg();
         [GeneratedRegex(@"Load finished : ([0-9]+.[0-9]+)ms")]
