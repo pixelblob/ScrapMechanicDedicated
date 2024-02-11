@@ -1,0 +1,2 @@
+copy /Y "C:\Users\phill\source\repos\ScrapMechanicDedicated\bin\Debug\net8.0-windows\ScrapMechanicDedicated.dll" "\\192.168.0.180\c\Users\pixel\Desktop\Scrap Mechanic"
+copy /Y "C:\Users\phill\source\repos\ScrapMechanicDedicated\bin\Debug\net8.0-windows\ScrapMechanicDedicated.exe" "\\192.168.0.180\c\Users\pixel\Desktop\Scrap Mechanic"
