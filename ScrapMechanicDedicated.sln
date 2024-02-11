@@ -5,8 +5,6 @@ VisualStudioVersion = 17.8.34330.188
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ScrapMechanicDedicated", "ScrapMechanicDedicated.csproj", "{1B44AC14-A7F7-4D4D-968F-7DAD3C0286AA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BugSplatOverride", "..\BugSplatOverride\BugSplatOverride.csproj", "{BE42A903-F006-48C7-B2B8-0AAF2C2089B2}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -17,10 +15,6 @@ Global
 		{1B44AC14-A7F7-4D4D-968F-7DAD3C0286AA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1B44AC14-A7F7-4D4D-968F-7DAD3C0286AA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1B44AC14-A7F7-4D4D-968F-7DAD3C0286AA}.Release|Any CPU.Build.0 = Release|Any CPU
-		{BE42A903-F006-48C7-B2B8-0AAF2C2089B2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{BE42A903-F006-48C7-B2B8-0AAF2C2089B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{BE42A903-F006-48C7-B2B8-0AAF2C2089B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{BE42A903-F006-48C7-B2B8-0AAF2C2089B2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
