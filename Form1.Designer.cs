@@ -101,6 +101,7 @@ namespace ScrapMechanicDedicated
             // stopGameServerCtx
             // 
             stopGameServerCtx.BackColor = Color.Transparent;
+            stopGameServerCtx.Enabled = false;
             stopGameServerCtx.ForeColor = Color.White;
             stopGameServerCtx.Image = Properties.Resources.power_off_solid1;
             stopGameServerCtx.ImageTransparentColor = Color.Chartreuse;

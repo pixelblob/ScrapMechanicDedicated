@@ -35,13 +35,17 @@ namespace ScrapMechanicDedicated
 
             //updateServerState();
 
-            startTcpServer();
-
-            parseCliArgs();
+            AllocConsole();
 
             initGameBackupManager();
             initGameInactivityManager();
             GameCrashManager gameCrashManager = new();
+
+            startTcpServer();
+
+            parseCliArgs();
+
+            
 
             if (!startHidden) form1.Show();
 

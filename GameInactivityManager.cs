@@ -16,23 +16,30 @@ namespace ScrapMechanicDedicated
         public static event GameInactivityStateHandler ServerInactvityStopped;
         public delegate void GameInactivityStateHandler();
 
-        public static int inactivityTimeoutMs = 15 * 1000;
+        public static int inactivityTimeoutMs = 10 * 60 * 1000;
         private static readonly System.Timers.Timer InactivityTimer = new(interval: inactivityTimeoutMs);
+
+        public static DateTime? lastInactiveTimeoutDate;
 
         static void OnServerInactvityStarted()
         {
+            logLine("Inactivity Timer Started!");
+            lastInactiveTimeoutDate = DateTime.Now;
             InactivityTimer.Start();
             ServerInactvityStarted?.Invoke();
         }
 
         static void OnServerInactvityStopped()
         {
+            logLine("Inactivity Timer Stopped!");
+            lastInactiveTimeoutDate = null;
             InactivityTimer.Stop();
             ServerInactvityStopped?.Invoke();
         }
 
         public static void initGameInactivityManager()
         {
+            logLine("Inactivity Manager Started!");
             InactivityTimer.Elapsed += InactivityTimer_Elapsed;
             ServerStarted += GameInactivityManager_ServerStarted;
             ServerStopped += GameInactivityManager_ServerStopped;

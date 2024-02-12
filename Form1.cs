@@ -90,7 +90,7 @@ namespace ScrapMechanicDedicated
             }
         }
 
-        public DateTime? lastInactiveTimeoutDate;
+        
 
         public void updateGuiPlayersList(string name)
         {
@@ -310,20 +310,29 @@ namespace ScrapMechanicDedicated
             ServerInactvityStopped += Form1_ServerInactvityStopped;
 
             updateApplicationStatusTitle();
+            updateFormState();
+
+            //When the form is opened for the first time while the server has been running for a bit (-autostart, -tray) the form will be out of sync since it
+            //was not initialized while the server events were taking place...
+
+            if (lastInactiveTimeoutDate != null && !serverSuspended && serverRunning)
+            {
+                Form1_ServerInactvityStarted();
+            }
+
         }
 
 
         private static readonly System.Timers.Timer InactivityTimerStatusUpdate = new(interval: 1000);
         private void Form1_ServerInactvityStopped()
         {
-            lastInactiveTimeoutDate = null;
             updateApplicationStatusTitle();
             InactivityTimerStatusUpdate.Stop();
         }
 
         private void Form1_ServerInactvityStarted()
         {
-            lastInactiveTimeoutDate = DateTime.Now;
+            
             updateApplicationStatusTitle();
             InactivityTimerStatusUpdate.Elapsed -= InactivityTimerStatusUpdate_Elapsed;
             InactivityTimerStatusUpdate.Elapsed += InactivityTimerStatusUpdate_Elapsed;
@@ -344,76 +353,73 @@ namespace ScrapMechanicDedicated
             });
         }
 
-        private void Form1_ServerResumed()
+        private void Form1_ServerStarted()
         {
-            this.Invoke(delegate
-            {
-                suspendServerButton.Enabled = true;
-                resumeServerButton.Enabled = false;
-
-                //ResetFailedAttemptsTimer.Start();
-            });
-
+            updateFormState();
             updateApplicationStatusTitle();
         }
-
-        private void Form1_ServerSuspended()
-        {
-            this.Invoke(delegate
-            {
-                suspendServerButton.Enabled = false;
-                resumeServerButton.Enabled = true;
-
-                //ResetFailedAttemptsTimer.Stop();
-            });
-
-            updateApplicationStatusTitle();
-        }
-
         private void Form1_ServerStopped(bool intentional = true)
         {
-            this.Invoke(delegate
-            {
-
-                richLogBox.Visible = false;
-                saveGamesListBox.Enabled = true;
-                stopServerButton.Enabled = false;
-                //inactiveTimer.Enabled = true;
-                //ResetFailedAttemptsTimer.Stop();
-
-                if (saveGamesListBox.SelectedIndex >= 0)
-                {
-                    startServerButton.Enabled = true;
-                    startGameServerCtx.Enabled = true;
-                }
-                else
-                {
-                    startGameServerCtx.Enabled = false;
-                    startServerButton.Enabled = false;
-                }
-                suspendServerButton.Enabled = false;
-                resumeServerButton.Enabled = false;
-
-            });
-
+            updateFormState();
+            updateApplicationStatusTitle();
+        }
+        private void Form1_ServerResumed()
+        {
+            updateFormState();
+            updateApplicationStatusTitle();
+        }
+        private void Form1_ServerSuspended()
+        {
+            updateFormState();
             updateApplicationStatusTitle();
         }
 
-        private void Form1_ServerStarted()
+        private void updateFormState()
         {
             Action safeWrite = delegate
             {
-                stopServerButton.Enabled = true;
-                startServerButton.Enabled = false;
-                suspendServerButton.Enabled = true;
-                saveGamesListBox.Enabled = false;
-                richLogBox.Visible = true;
+                if (serverRunning)
+                {
+                    stopServerButton.Enabled = true;
+                    startServerButton.Enabled = false;
+                    startGameServerCtx.Enabled = false;
+                    saveGamesListBox.Enabled = false;
+                    richLogBox.Visible = true;
+
+                    if (serverSuspended)
+                    {
+                        suspendServerButton.Enabled = false;
+                        resumeServerButton.Enabled = true;
+                    } else
+                    {
+                        suspendServerButton.Enabled = true;
+                        resumeServerButton.Enabled = false;
+                    }
+
+                } else
+                {
+                    richLogBox.Visible = false;
+                    saveGamesListBox.Enabled = true;
+                    stopServerButton.Enabled = false;
+                    suspendServerButton.Enabled = false;
+                    resumeServerButton.Enabled = false;
+
+                    if (saveGamesListBox.SelectedIndex >= 0)
+                    {
+                        startServerButton.Enabled = true;
+                        startGameServerCtx.Enabled = true;
+                    }
+                    else
+                    {
+                        startGameServerCtx.Enabled = false;
+                        startServerButton.Enabled = false;
+                    }
+                }
 
             };
             this.Invoke(safeWrite);
-
-            updateApplicationStatusTitle();
         }
+
 
         private void backupServerBtn_Click(object sender, EventArgs e)
         {
